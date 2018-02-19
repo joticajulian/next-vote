@@ -15,12 +15,44 @@
             <div class="jumbotron bg-white">
                 <h1>Next Vote</h1>
                 <p>See which posts will receive a vote from a Bidbot. By <a href="https://steemit.com/@jga/">@jga</a></p>
-            </div>
-            <hr>
+            </div>            
             <div class="row">
-                <ul id="bot_list">
-                Loading...
-                </ul>
+                <div class="col-sm-12 col-xs-12"><hr></div>
+                <div class="col-sm-8 col-xs-6">
+                    <div class="col-sm-12 col-xs-12" id="form-order-by-curation">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="account" placeholder="Your account or Vote value">
+                            <span class="input-group-btn">
+                                <button class="btn btn-secondary" type="button" onclick="reorderVoteValue()">Reorder</button>
+                            </span>
+                        </div>
+                        <div class="col-sm-12 col-xs-12" style="padding-top:5px;">
+                            <span>Your upvote: </span><span id="your_upvote"></span>
+                        </div>                        
+                    </div>
+                </div>                
+                <div class="col-sm-4 col-xs-6 pull-right">
+                    <select class="form-control" id="selOrder">
+                        <option class="is_ml" value="1">Order by curation</option>
+                        <option class="is_ml" value="2">Order by bid value</option>
+                        <option class="is_ml" value="3">Order by remaining time </option>
+                    </select>
+                </div>
+                <div class="col-sm-12 col-xs-12"><hr></div>
+                
+                <div class="col-sm-12 col-xs-12">
+				    <div class="progress">
+					    <div id="progress-bar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
+								0
+						</div>
+					</div>
+				</div>
+                
+                <div class="col-sm-12 col-sx-12">
+                    <ul id="bot_list">
+                        <span>Loading...</span>
+                    </ul>
+                </div>    
             </div>
         </div>
 		<div id="footer" class="container-fluid">
