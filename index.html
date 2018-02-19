@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Next Vote</title>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
+		<link rel="stylesheet" type="text/css" href="./css/main.css"/>
+		<link href="https://fonts.googleapis.com/css?family=Montserrat|Sansita" rel="stylesheet"/>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>	
+		<script src="https://cdn.steemjs.com/lib/latest/steem.min.js"></script>
+	</head>
+	<body>
+		<div class="container bg-white">
+            <div class="jumbotron bg-white">
+                <h1>Next Vote</h1>
+                <p>See which posts will receive a vote from a Bidbot. By <a href="https://steemit.com/@jga/">@jga</a></p>
+            </div>
+            <hr>
+            <div class="row">
+                <ul id="bot_list">
+                Loading...
+                </ul>
+            </div>
+        </div>
+		<div id="footer" class="container-fluid">
+			<span id="nextvoteby" class="is_ml"> Next Vote by <a href="https://steemit.com/@jga/">@jga</a></span><br>
+			<span id="seeitongithub" class="is_ml"> See it on <a href="https://github.com/joticajulian/next-vote/">github.com</a></span>						
+		</div>
+	</body>
+	<!--<script src="./js/multilanguages.js?1"></script>-->
+	<script src="./js/next-vote.js?1"></script>		
+    <script src="./js/utils.js?1"></script>
+</html>
