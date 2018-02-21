@@ -471,8 +471,8 @@ function reorderByCuration(){
 
 function reorderByBid(){
   posts.sort(function(a,b){
-    if(a.transfer > b.transfer) return -1;
-    if(a.transfer < b.transfer) return 1;
+    if(a.transfer_usd > b.transfer_usd) return -1;
+    if(a.transfer_usd < b.transfer_usd) return 1;
     return 0;
   });
   $('#form-order-by-curation').hide();
