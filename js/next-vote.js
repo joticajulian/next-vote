@@ -6,6 +6,7 @@ var orderType = 1;
 
 var totalPosts = 0;
 var loadedPosts = 0;
+var lastTime = new Date();
 
 $(function () {
     var RETURN = 1;
@@ -199,6 +200,7 @@ $(function () {
                                         round.bids.push({ id: trans[0], data: op[1] });
                                         round.total += amount;
                                         round.total_usd += getUsdValue(op[1]);
+                                        
                                     }
                                 }
                             } else if (op[0] == 'vote' && op[1].voter == account.name) {
@@ -214,8 +216,9 @@ $(function () {
                         bot.total = round.total;
                         bot.total_usd = round.total_usd;
                         bot.bid = (bot.vote - RETURN * bot.total) / RETURN;
-                        console.log("Loaded bot: "+bot.name);
-                        loadPosts(bot);
+                        console.log("Loaded bot: "+bot.name);  
+                        totalPosts += bot.rounds[bot.rounds.length - 1].bids.length;                        
+                        //loadPosts(bot);
                     });
                 });
                 first_load = false;
@@ -233,9 +236,9 @@ $(function () {
         bot.total = round.total;
         bot.total_usd = round.total_usd;
         bot.bid = (bot.vote - RETURN * bot.total) / RETURN;
-        
+        totalPosts += round.bids.length;
         console.log("Loaded bot (API): "+bot.name);
-        loadPosts(bot);                      
+        //loadPosts(bot);                      
       });
     }
 
@@ -266,19 +269,15 @@ $(function () {
       return round;
     }
     
-    /*function test(i){
-      metadata = {tags:["panama","spanish","jugador","utopian-io"], image:["./images/fundinggovernment.png","./images/1.jpg"]};
-      nextvote = new Date((new Date()).getTime() + 1.2 * 60 * 1000);
-      post = {author:'jga', permlink:'my-link', url:'steemit.com/@jga/my-link', created:new Date(), already_voted:false, old_post:false, bot:'postpromoter', current_payout:'0.05', transfer:''+i, next_vote_time:nextvote, vote_value:'12',json_metadata:metadata,root_title:'Este es el título del post!! espero les guste mucho'};
-      post.html = postHtml(post);
-      posts.push(post);
-      $('#bot_list').append(post.html);
+    function loadPostsBots(){
+      for(var i=0;i<bots.length;i++) loadPosts(bots[i]);
     }
-    for(i=0;i<9;i++) test(i);*/
+    setInterval(loadPostsBots,3000);
     
     function loadPosts(bot){
       loadingPosts = true;
-      lastGetContentResponse = 0;      
+      lastGetContentResponse = 0;  
+      if(typeof bot.rounds === 'undefined') return;      
       var round = bot.rounds[bot.rounds.length - 1];      
       console.log("Posts of "+bot.name+": "+round.bids.length);
       round.bids.forEach(function (bid){
@@ -286,37 +285,62 @@ $(function () {
         var amount = bid.data;
         var permLink = memo.substr(memo.lastIndexOf('/') + 1);
         var author = memo.substring(memo.lastIndexOf('@') + 1, memo.lastIndexOf('/'));
-        totalPosts++;
+        var transfer_usd = getUsdValue(amount);
+        var now = new Date();
+        var next_vote_time = new Date(now.getTime() + bot.next);
+                
+        //totalPosts++;
+        
+        for(var i=0;i<posts.length;i++){
+          if(posts[i].author == author && posts[i].permlink == permLink){
+            if(typeof posts[i].votes === 'undefined') return;
+            for(var j=0; j<posts[i].bot.length; j++) if(posts[i].bot[j] == bot.name) return;
+            var now = new Date();
+            var created = posts[i].created;
+            
+            var already_voted = posts[i].votes.length > 0 && (now - new Date(votes[0].time + 'Z') > 20 * 60 * 1000);
+            var old_post = (now - created) >= (bot.max_post_age * 24 * 60 * 60 * 1000);
+            if(!already_voted && !old_post){
+              posts[i].transfer_usd += getUsdValue(amount);
+              posts[i].bot.push(bot.name);
+              posts[i].transfer.push(amount.amount);
+              posts[i].next_vote_time.push(next_vote_time);              
+              posts[i].html = postHtml(posts[i]);
+              reorder();              
+            }
+            totalPosts--;
+            return;
+          }
+        }
+        
+        var post_aux = {author:author, permlink:permLink, loaded:0};
+        posts.push(post_aux);
           
         steem.api.getContent(author, permLink, function (err, result) {
           if (!err && result && result.id > 0) {
-            lastGetContentResponse = new Date();
-            var now = new Date();
+            lastGetContentResponse = new Date();            
             
             var created = new Date(result.created + 'Z');
             var votes = result.active_votes.filter(function (vote) { return vote.voter == bot.name; });
-            var already_voted = votes.length > 0 && (now - new Date(votes[0].time + 'Z') > 20 * 60 * 1000);
-            var old_post = (now - created) >= (bot.max_post_age * 24 * 60 * 60 * 1000); 
-            var pending_payout_value = parseFloat(result.pending_payout_value.replace(" SBD",""));
-            var next_vote_time = new Date(now.getTime() + bot.next);            
-            var transfer_usd = getUsdValue(amount);
-            var vote_value = bot.vote * transfer_usd / round.total_usd;
+            var pending_payout_value = parseFloat(result.pending_payout_value.replace(" SBD",""));                                   
+            //var vote_value = bot.vote * transfer_usd / round.total_usd;
             var url = "https://steemit.com"+result.url;
-            var min30 = (now - created) >= (30 * 60 * 1000);
-            var post = {author:author, permlink:permLink, url:url, created:created, already_voted:already_voted, old_post:old_post, bot:bot.name, current_payout:pending_payout_value, transfer:amount.amount, transfer_usd:transfer_usd, next_vote_time:next_vote_time, vote_value:vote_value,json_metadata:JSON.parse(result.json_metadata),root_title:result.root_title};
+            var post = {author:author, permlink:permLink, url:url, created:created, votes:votes, bot:[bot.name], current_payout:pending_payout_value, transfer:[amount.amount], transfer_usd:transfer_usd, next_vote_time:[next_vote_time], json_metadata:JSON.parse(result.json_metadata),root_title:result.root_title,loaded:1};
             post.html = postHtml(post);
               
-            new_post = true;
-            /*for(i=0;i<posts.length;i++){
-              if(posts[i].author == post.author && posts[i].permlink == post.permlink){
-                posts[i] = post;
-                new_post = false;
-              }  
-            }*/
-            if(new_post && !already_voted && !old_post && min30){
-              posts.push(post);              
-              reorder();
-              loadedPosts++;              
+            var already_voted = votes.length > 0 && (now - new Date(votes[0].time + 'Z') > 20 * 60 * 1000);
+            var old_post = (now - created) >= (bot.max_post_age * 24 * 60 * 60 * 1000); 
+            var min30 = (now - created) >= (30 * 60 * 1000);
+            
+            if(!already_voted && !old_post && min30){
+              for(i=0;i<posts.length;i++){
+                if(posts[i].author == author && posts[i].permlink == permLink){
+                  posts[i] = post;
+                  reorder();
+                  loadedPosts++;
+                  break;
+                }
+              }
             }else{
               totalPosts--;
             }
@@ -353,7 +377,7 @@ function postHtml(post){
   }else url_image = post.json_metadata.image[0];
   var next_vote = textNextVote(post.next_vote_time);
       
-  return ''+ 
+  var text = ''+ 
    '<div class="post">'+
    '  <div class="row">'+
    '    <div class="user_name col-sm-6 col-xs-6">'+
@@ -378,15 +402,25 @@ function postHtml(post){
    '        <strong>'+
    '          <a href="'+post.url+'">'+post.root_title+'</a>'+
    '        </strong>'+
-   '      </div>'+
-   '      <div class="col-sm-1 col-xs-4 current_payout">$'+parseFloat(post.current_payout).toFixed(2)+'</div>'+
-   '      <div class="col-sm-2 col-xs-4 transfer">'+post.transfer+'</div>'+
-   '      <div class="col-sm-4 col-xs-4 bot">'+
-   '        <span class="timestamp">@'+post.bot+'</span>'+
-   '        <span class="timestamp_text timestamp" title="'+formatTime(post.next_vote_time)+'">'+
-              textNextVote(post.next_vote_time)+
-   '        </span>'+
-   '      </div>'+              
+   '      </div>';
+   
+   for(i=0;i<post.transfer.length;i++){
+     text = text +
+     '      <div class="row">';
+     if(i==0) text = text+'<div class="col-sm-1 col-xs-4 current_payout">$'+parseFloat(post.current_payout).toFixed(2)+'</div>';
+     else text = text+ '<div class="col-sm-1 col-xs-4 current_payout"></div>';
+     text = text +
+     '        <div class="col-sm-2 col-xs-4 transfer">'+post.transfer[i]+'</div>'+
+     '        <div class="col-sm-4 col-xs-4 bot">'+
+     '          <span class="timestamp">@'+post.bot[i]+'</span>'+
+     '          <span class="timestamp_text timestamp" title="'+formatTime(post.next_vote_time[i])+'">'+
+                  textNextVote(post.next_vote_time[i])+
+     '          </span>'+
+     '        </div>'+
+     '      </div>';     
+   }
+   
+   return text+
    '    </div>'+
    '  </div>'+
    '</div>';  
@@ -442,12 +476,15 @@ function reorderVoteValue(){
 }
 
 function reorder(){
-  if(orderType == 1) reorderByCuration();
-  else if(orderType == 2) reorderByBid();
-  else if(orderType == 3) reorderByTime();
+  if(new Date() - lastTime > 3 * 1000){
+    if(orderType == 1) reorderByCuration();
+    else if(orderType == 2) reorderByBid();
+    else if(orderType == 3) reorderByTime();
   
-  $('#bot_list').text("");
-  for(i=0;i<posts.length;i++) $('#bot_list').append(posts[i].html);
+    $('#bot_list').text("");
+    for(i=0;i<posts.length;i++) if(parseInt(posts[i].loaded)==1) $('#bot_list').append(posts[i].html);
+    lastTime = new Date();
+  }
 }
 
 function reorderByCuration(){
