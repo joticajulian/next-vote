@@ -129,6 +129,7 @@ $(function () {
                     bot.power = getVotingPower(account) / 100;
                     bot.last = (new Date() - last_vote_time);
                     bot.next = timeTilFullPower(account) * 1000;
+                    bot.next_vote_time = new Date((new Date()).getTime() + bot.next);
                     bot.vote_usd = bot.vote / 2 * sbd_price + bot.vote / 2;
 
                     // Don't load bots that are filtered out
@@ -287,10 +288,7 @@ $(function () {
         var author = memo.substring(memo.lastIndexOf('@') + 1, memo.lastIndexOf('/'));
         var transfer_usd = getUsdValue(amount);
         var now = new Date();
-        var next_vote_time = new Date(now.getTime() + bot.next);
                 
-        //totalPosts++;
-        
         for(var i=0;i<posts.length;i++){
           if(posts[i].author == author && posts[i].permlink == permLink){
             if(typeof posts[i].votes === 'undefined') return;
@@ -304,7 +302,7 @@ $(function () {
               posts[i].transfer_usd += getUsdValue(amount);
               posts[i].bot.push(bot.name);
               posts[i].transfer.push(amount.amount);
-              posts[i].next_vote_time.push(next_vote_time);              
+              posts[i].next_vote_time.push(bot.next_vote_time);              
               posts[i].html = postHtml(posts[i]);
               reorder();              
             }
@@ -325,7 +323,7 @@ $(function () {
             var pending_payout_value = parseFloat(result.pending_payout_value.replace(" SBD",""));                                   
             //var vote_value = bot.vote * transfer_usd / round.total_usd;
             var url = "https://steemit.com"+result.url;
-            var post = {author:author, permlink:permLink, url:url, created:created, votes:votes, bot:[bot.name], current_payout:pending_payout_value, transfer:[amount.amount], transfer_usd:transfer_usd, next_vote_time:[next_vote_time], json_metadata:JSON.parse(result.json_metadata),root_title:result.root_title,loaded:1};
+            var post = {author:author, permlink:permLink, url:url, created:created, votes:votes, bot:[bot.name], current_payout:pending_payout_value, transfer:[amount.amount], transfer_usd:transfer_usd, next_vote_time:[bot.next_vote_time], json_metadata:JSON.parse(result.json_metadata),root_title:result.root_title,loaded:1};
             post.html = postHtml(post);
               
             var already_voted = votes.length > 0 && (now - new Date(votes[0].time + 'Z') > 20 * 60 * 1000);
@@ -427,7 +425,12 @@ function postHtml(post){
  }
     
 function formatTime(t){
-  return t.getFullYear()+'-'+(t.getMonth()+1)+'-'+t.getDate()+' '+t.getHours()+':'+t.getMinutes()+':'+t.getSeconds() 
+  return t.getFullYear()+'-'+addZero(t.getMonth()+1)+'-'+addZero(t.getDate())+'T'+addZero(t.getHours())+':'+addZero(t.getMinutes())+':'+addZero(t.getSeconds()) 
+}
+
+function addZero(x){
+  if(x < 10) return "0"+x;
+  else return ""+x;
 }
     
 function update_timestamp() {
