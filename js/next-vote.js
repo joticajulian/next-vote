@@ -482,7 +482,8 @@ function reorder(){
   if(new Date() - lastTime > 3 * 1000){
     if(orderType == 1) reorderByCuration();
     else if(orderType == 2) reorderByBid();
-    else if(orderType == 3) reorderByTime();
+    else if(orderType == 3) reorderByCurrentPayout();
+    else if(orderType == 4) reorderByTime();
   
     $('#bot_list').text("");
     for(i=0;i<posts.length;i++) if(parseInt(posts[i].loaded)==1) $('#bot_list').append(posts[i].html);
@@ -511,6 +512,19 @@ function reorderByCuration(){
 
 function reorderByBid(){
   posts.sort(function(a,b){
+    if(a.transfer_usd > b.transfer_usd) return -1;
+    if(a.transfer_usd < b.transfer_usd) return 1;
+    return 0;
+  });
+  $('#form-order-by-curation').hide();
+}
+
+function reorderByCurrentPayout(){
+  posts.sort(function(a,b){  
+    if(parseFloat(a.current_payout) < parseFloat(b.current_payout)) return -1;
+    if(parseFloat(a.current_payout) > parseFloat(b.current_payout)) return 1;
+    
+    //if it is the same then order by bid
     if(a.transfer_usd > b.transfer_usd) return -1;
     if(a.transfer_usd < b.transfer_usd) return 1;
     return 0;
